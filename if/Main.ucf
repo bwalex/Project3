@@ -1,0 +1,62 @@
+TIMESPEC TS_clkb = PERIOD "clkb" 25 ns HIGH 50%;
+NET "clkb" LOC = A16;
+
+
+NET "adio<0>" LOC = U23;
+NET "adio<1>" LOC = V23;
+NET "adio<2>" LOC = V26;
+NET "adio<3>" LOC = V25;
+NET "adio<4>" LOC = U20;
+NET "adio<5>" LOC = U21;
+NET "adio<6>" LOC = U22;
+NET "adio<7>" LOC = U24;
+NET "adio<8>" LOC = U25;
+NET "adio<9>" LOC = U26;
+NET "adio<10>" LOC = T19;
+NET "adio<11>" LOC = T20;
+NET "adio<12>" LOC = T21;
+NET "adio<13>" LOC = T23;
+NET "adio<14>" LOC = T24;
+NET "adio<15>" LOC = T26;
+NET "adio<16>" LOC = R19;
+NET "adio<17>" LOC = R20;
+NET "adio<18>" LOC = R23;
+NET "adio<19>" LOC = R24;
+NET "adio<20>" LOC = R25;
+NET "adio<21>" LOC = R26;
+NET "adio<22>" LOC = P19;
+NET "adio<23>" LOC = P20;
+NET "adio<24>" LOC = P22;
+NET "adio<25>" LOC = P23;
+NET "adio<26>" LOC = P24;
+NET "adio<27>" LOC = P25;
+NET "adio<28>" LOC = N20;
+NET "adio<29>" LOC = N23;
+NET "adio<30>" LOC = N21;
+NET "adio<31>" LOC = N22;
+
+NET "busy"  LOC  = R4;
+NET "empty"   LOC  = R3;
+NET "rdl_wr"   LOC = R2;
+NET "as_dsl"   LOC = R1;
+NET "renl_wenl"   LOC = P7;
+#NET "intl"   LOC = P6;
+#NET "rstl" LOC = P5; 		#interface reset
+
+NET "green2" LOC = "D3";	  #Green 2
+#NET "red2" LOC = "F3";	  #Red 2
+#NET "green1" LOC = "E26";	  #Green 1
+NET "red1" LOC = "D26";  #Red 1
+
+NET "adio<*>" OFFSET = OUT 12.5ns AFTER clkb;
+NET "adio<*>" OFFSET = IN 5ns BEFORE clkb;
+
+
+NET "renl_wenl" OFFSET = OUT 11ns AFTER clkb;
+NET "rdl_wr" OFFSET = OUT 11ns AFTER clkb;
+#NET "intl" OFFSET = OUT 11ns AFTER clkb;
+NET "empty" OFFSET = IN 9ns BEFORE clkb;
+NET "busy" OFFSET = IN 8ns BEFORE clkb;
+NET "as_dsl" OFFSET = IN 9ns BEFORE clkb;
+#Created by Constraints Editor (xc4vsx35-ff668-10) - 2010/10/12
+NET "clkb" TNM_NET = clkb;

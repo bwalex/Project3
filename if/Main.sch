@@ -53,13 +53,12 @@
             <rect width="256" x="64" y="-320" height="576" />
         </blockdef>
         <blockdef name="fifo">
-            <timestamp>2010-10-14T10:34:43</timestamp>
+            <timestamp>2010-10-14T12:38:41</timestamp>
             <rect width="512" x="32" y="32" height="736" />
             <line x2="32" y1="80" y2="80" style="linewidth:W" x1="0" />
             <line x2="32" y1="144" y2="144" x1="0" />
             <line x2="32" y1="240" y2="240" x1="0" />
             <line x2="32" y1="336" y2="336" x1="0" />
-            <line x2="144" y1="800" y2="768" x1="144" />
             <line x2="544" y1="80" y2="80" style="linewidth:W" x1="576" />
             <line x2="544" y1="208" y2="208" x1="576" />
             <line x2="544" y1="336" y2="336" x1="576" />
@@ -88,7 +87,6 @@
             <blockpin signalname="XLXN_4" name="wr_en" />
             <blockpin signalname="XLXN_3" name="rd_en" />
             <blockpin signalname="clkb" name="clk" />
-            <blockpin name="rst" />
             <blockpin signalname="dout(31:0)" name="dout(31:0)" />
             <blockpin signalname="XLXN_2" name="full" />
             <blockpin name="overflow" />

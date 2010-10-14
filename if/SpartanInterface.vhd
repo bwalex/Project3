@@ -65,7 +65,9 @@ signal blink_green : std_logic;
 signal write_performed : std_logic := '0';
 signal data_reg : std_logic_vector(31 downto 0);
 signal is_addr : std_logic;
-signal data_reg_out : std_logic_vector(31 downto 0) := "11011110101011011100000011011110";
+-- Address in.
+signal ADDRESSi : std_logic_vector (31 downto 0);
+signal data_reg_out : std_logic_vector(31 downto 0) := "11011110101011011100000011111111";
 signal data_out_reg : std_logic_vector(31 downto 0);
 signal fifo_buffer : std_logic_vector(31 downto 0);
 -- Delayed versions of busy and empty.
@@ -84,6 +86,9 @@ signal FIFO_WR_ENi : std_logic := '0';
 -- Internal signals wired to Spartan Interface RD_WR and REN_WEN
 signal RD_WRi : std_logic;
 signal REN_WENi : std_logic;
+
+-- Write in address.
+signal ADDRESS_WR : std_logic;
 
 -- Data is in buffer waiting to be processed.
 signal DATA_RDY : std_logic;
@@ -104,6 +109,22 @@ begin
 end process;	
 
 
+
+
+-- Control for writing address.
+ADDRESS_WR <= '1' when (IF_STATE=RD_DATA and is_addr='1') or (IF_STATE=WAIT_DATACHK and is_addr='1') else '0'; 
+
+-- Write new address.
+process (CLK)
+begin
+	if rising_edge(CLK) then
+		if ADDRESS_WR='1' then
+			ADDRESSi <= data_reg;
+		end if;
+	end if;
+end process;
+		
+
 -- Delayed and undelayed versions of register write signal
 WR_REG_WR <= '1' when IF_STATE=WR_REG and DATA_RDY='0' and EMPTYd1='0' else '0';
 process (CLK)
@@ -113,9 +134,8 @@ begin
 	end if;
 end process;	
 
-
 -- Incoming data signal
-DATAIN_WR <= '1' when IF_STATE=RD_DATA or IF_STATE=RD_WAIT or (WR_REG_WRd1='1') else '0';	
+DATAIN_WR <= '1' when IF_STATE=RD_WAIT or (WR_REG_WRd1='1') else '0'; --
 
 -- When data is incoming, store the data itself (ADIO)
 -- and whether it's an address or not
@@ -129,9 +149,9 @@ begin
 	end if;
 end process;
 
-
+--
 -- FIFO in interface 
-DATAIN_FIFO <= '1' when IF_STATE=RD_REG and (FIFO_RD_ENi='1') else '0';	
+DATAIN_FIFO <= '1' when IF_STATE=RD_REG else '0';	
 
 process (CLK)
 begin 
@@ -164,12 +184,12 @@ begin
 				RD_WRi <= '1';
 				REN_WENi <= '1';
 				IF_STATE <= RD_DATA;
-				blink_red <= AS_DS;
+				--blink_red <= AS_DS;
 
 			when RD_DATA =>
 				RD_WRi <= '1';
 				REN_WENi <= '1';
-				blink_green <= is_addr;
+				--blink_red <= is_addr;
 				if is_addr = '1' then
 					IF_STATE <= ADDR_DEC;
 				else
@@ -178,10 +198,9 @@ begin
 				end if;
 
 			when ADDR_DEC =>
-				--blink_red <= data_reg(31);
-				if data_reg(31)='0' then
+				--blink_red <= ADDRESSi(31);
+				if ADDRESSi(31)='0' then
 					IF_STATE <= WR_REG;
-					FIFO_WR_ENi <= '1';
 				else
 					IF_STATE <= RD_REG;
 					FIFO_RD_ENi <= '1';
@@ -197,7 +216,8 @@ begin
 						IF_STATE <= WAIT_DATACHK;
 					end if;
 				else
-					FIFO_WR_ENi <= '0';
+					blink_red <= not blink_red;
+					FIFO_WR_ENi <= '1';
 					DATA_RDY <= '0';
 					IF_STATE <= WAIT_DATACHK;
 				end if;
@@ -221,7 +241,8 @@ begin
 					else
 						IF_STATE <= WR_REG;
 					end if;
-				else				
+				else
+					FIFO_WR_ENi <= '0';
 					IF_STATE <= WAIT_ENDTRANS;
 				end if;
 
@@ -239,9 +260,10 @@ end process;
 process (CLK)
 begin
 	if rising_edge(CLK) then
-		--blink_green <= FIFO_EMPTY;
+		blink_green <= FIFO_EMPTY;
 		if FIFO_EMPTY='0' then
-			data_out_reg <= fifo_buffer;
+			-- use first-word fall-through
+			data_out_reg <= FIFO_IN;--fifo_buffer;
 		else
 			data_out_reg <= data_reg_out;
 		end if;
@@ -259,6 +281,8 @@ txled <= blink_green;
 
 FIFO_RD_EN <= FIFO_RD_ENi;
 FIFO_WR_EN <= FIFO_WR_ENi;
+
 FIFO_OUT <= data_reg;
+
 end Behavioral;
 

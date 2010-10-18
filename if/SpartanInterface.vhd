@@ -30,6 +30,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 entity SpartanInterface is
 	port (
 		-- Interface to Spartan:
+		RST		: in	std_logic;
 		CLK		: in	std_logic;
 		AS_DS		: in	std_logic;
 		EMPTY		: in	std_logic;
@@ -37,7 +38,6 @@ entity SpartanInterface is
 		REN_WEN	: out	std_logic;
 		RD_WR		: out	std_logic;
 		ADIO		: inout	std_logic_vector (31 downto 0);
-
 		-- Misc:
 		TXLED		: out std_logic;
 		RXLED		: out std_logic;
@@ -58,8 +58,8 @@ end SpartanInterface;
 
 
 architecture Behavioral of SpartanInterface is
-type IFACE_STATES is (IDLE, RD_WAIT, RD_DATA, RD_REG, WR_REG, WAIT_DATACHK, WAIT_ENDTRANS, ADDR_DEC);
-signal IF_STATE : IFACE_STATES := IDLE;
+type IFACE_STATES is (RST_STATE, IDLE, RD_WAIT, RD_DATA, RD_REG, WR_REG, WAIT_DATACHK, WAIT_ENDTRANS, ADDR_DEC);
+signal IF_STATE : IFACE_STATES;
 signal blink_red : std_logic;
 signal blink_green : std_logic;
 signal write_performed : std_logic := '0';
@@ -70,6 +70,7 @@ signal ADDRESSi : std_logic_vector (31 downto 0);
 signal data_reg_out : std_logic_vector(31 downto 0) := "11011110101011011100000011111111";
 signal data_out_reg : std_logic_vector(31 downto 0);
 signal fifo_buffer : std_logic_vector(31 downto 0);
+signal tmp_reg : std_logic_vector(31 downto 0);
 -- Delayed versions of busy and empty.
 signal EMPTYd1 : std_logic;
 signal BUSYd1 : std_logic;
@@ -100,9 +101,12 @@ signal DATAIN_FIFO : std_logic;
 begin
 
 -- Delayed versions of empty and busy
-process (CLK)
+process (CLK, RST)
 begin
-	if rising_edge(CLK) then
+	if RST='1' then
+		EMPTYd1 <= '1';
+		BUSYd1 <= '1';
+	elsif rising_edge(CLK) then
 		EMPTYd1 <= EMPTY;
 		BUSYd1 <= BUSY;
 	end if;
@@ -115,9 +119,11 @@ end process;
 ADDRESS_WR <= '1' when (IF_STATE=RD_DATA and is_addr='1') or (IF_STATE=WAIT_DATACHK and is_addr='1') else '0'; 
 
 -- Write new address.
-process (CLK)
+process (CLK, RST)
 begin
-	if rising_edge(CLK) then
+	if RST='1' then
+		ADDRESSi <= (others => '0');
+	elsif rising_edge(CLK) then
 		if ADDRESS_WR='1' then
 			ADDRESSi <= data_reg;
 		end if;
@@ -127,9 +133,11 @@ end process;
 
 -- Delayed and undelayed versions of register write signal
 WR_REG_WR <= '1' when IF_STATE=WR_REG and DATA_RDY='0' and EMPTYd1='0' else '0';
-process (CLK)
+process (CLK, RST)
 begin
-	if rising_edge(CLK) then
+	if RST='1' then
+		WR_REG_WRd1 <= '0';
+	elsif rising_edge(CLK) then
 		WR_REG_WRd1 <= WR_REG_WR;
 	end if;
 end process;	
@@ -141,10 +149,16 @@ DATAIN_WR <= '1' when IF_STATE=RD_WAIT or (WR_REG_WRd1='1') else '0'; --
 -- and whether it's an address or not
 process (CLK)
 begin 
-	if rising_edge(CLK) then
+	if RST='1' then
+		is_addr <= '0';
+		data_reg <= (others => '0');
+	elsif rising_edge(CLK) then
 		if DATAIN_WR='1' then
 			data_reg <= ADIO;
 			is_addr <= AS_DS;
+			if (WR_REG_WRd1='1') then
+				tmp_reg <= ADIO;
+			end if;
 		end if;
 	end if;
 end process;
@@ -153,9 +167,11 @@ end process;
 -- FIFO in interface 
 DATAIN_FIFO <= '1' when IF_STATE=RD_REG else '0';	
 
-process (CLK)
-begin 
-	if rising_edge(CLK) then
+process (CLK, RST)
+begin
+	if RST='1' then
+		fifo_buffer <= (others => '0');
+	elsif rising_edge(CLK) then
 		if DATAIN_FIFO='1' then
 			fifo_buffer <= FIFO_IN;
 		end if;
@@ -167,8 +183,16 @@ end process;
 -- Main state machine
 process (CLK)
 begin
-	if rising_edge(CLK) then
+	if RST='1' then
+		IF_STATE <= RST_STATE;
+		RD_WRi <= '1';
+		REN_WENi <= '1';
+		DATA_RDY <= '0';
+	elsif rising_edge(CLK) then
 		case IF_STATE is
+			when RST_STATE =>
+				IF_STATE <= IDLE;
+
 			when IDLE =>
 				--RXLED <= '1';
 				if EMPTYd1 = '0' then
@@ -198,11 +222,13 @@ begin
 				end if;
 
 			when ADDR_DEC =>
-				--blink_red <= ADDRESSi(31);
+				blink_green <= ADDRESSi(31);
 				if ADDRESSi(31)='0' then
 					IF_STATE <= WR_REG;
+					--blink_green <= not blink_green;
 				else
 					IF_STATE <= RD_REG;
+					--DATA_RDY <= '0';
 					FIFO_RD_ENi <= '1';
 				end if;
 
@@ -217,12 +243,12 @@ begin
 					end if;
 				else
 					blink_red <= not blink_red;
-					FIFO_WR_ENi <= '1';
+					--FIFO_WR_ENi <= '1';
 					DATA_RDY <= '0';
 					IF_STATE <= WAIT_DATACHK;
 				end if;
 
-			-- Read from register.		
+			-- Read from register.
 			when RD_REG =>
 				RD_WRi <= '1';
 				REN_WENi <= '0';
@@ -239,10 +265,11 @@ begin
 						IF_STATE <= ADDR_DEC;
 						DATA_RDY <= '0';
 					else
+						--blink_red <= not blink_red;
 						IF_STATE <= WR_REG;
 					end if;
 				else
-					FIFO_WR_ENi <= '0';
+					--FIFO_WR_ENi <= '0';
 					IF_STATE <= WAIT_ENDTRANS;
 				end if;
 
@@ -252,15 +279,20 @@ begin
 				REN_WENi <= '1';
 
 			when others =>
-				IF_STATE <= IDLE;
+				IF_STATE <= RST_STATE;
+				RD_WRi <= '1';
+				REN_WENi <= '1';
+				DATA_RDY <= '0';
 		end case;
 	end if;
 end process;
 
-process (CLK)
+process (CLK, RST)
 begin
-	if rising_edge(CLK) then
-		blink_green <= FIFO_EMPTY;
+	if RST='1' then
+		data_out_reg <= (others => '0');
+	elsif rising_edge(CLK) then
+		--blink_green <= FIFO_EMPTY;
 		if FIFO_EMPTY='0' then
 			-- use first-word fall-through
 			data_out_reg <= FIFO_IN;--fifo_buffer;
@@ -270,8 +302,8 @@ begin
 	end if;
 end process;
 
-ADIO <= data_out_reg when RD_WRi='1' else (others => 'Z');
---ADIO <= data_reg_out when RD_WRi='1' else (others => 'Z');
+ADIO <= tmp_reg when RD_WRi='1' else (others => 'Z');
+--ADIO <= data_out_reg when RD_WRi='1' else (others => 'Z');
 
 -- Wire internal signals to external ones
 RD_WR <= RD_WRi;

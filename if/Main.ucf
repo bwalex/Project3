@@ -41,7 +41,7 @@ NET "rdl_wr"   LOC = R2;
 NET "as_dsl"   LOC = R1;
 NET "renl_wenl"   LOC = P7;
 #NET "intl"   LOC = P6;
-#NET "rstl" LOC = P5; 		#interface reset
+NET "rstl" LOC = P5; 		#interface reset
 
 NET "green2" LOC = "D3";	  #Green 2
 #NET "red2" LOC = "F3";	  #Red 2

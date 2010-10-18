@@ -21,6 +21,7 @@
         <signal name="din(31:0)" />
         <signal name="dout(31:0)" />
         <signal name="clkb" />
+        <signal name="rstl" />
         <port polarity="Input" name="as_dsl" />
         <port polarity="Input" name="EMPTY" />
         <port polarity="Input" name="BUSY" />
@@ -30,8 +31,10 @@
         <port polarity="Output" name="red1" />
         <port polarity="BiDirectional" name="ADIO(31:0)" />
         <port polarity="Input" name="clkb" />
+        <port polarity="Input" name="rstl" />
         <blockdef name="SpartanInterface">
-            <timestamp>2010-10-14T9:40:56</timestamp>
+            <timestamp>2010-10-18T13:8:18</timestamp>
+            <line x2="0" y1="288" y2="288" x1="64" />
             <rect width="64" x="0" y="212" height="24" />
             <line x2="0" y1="224" y2="224" x1="64" />
             <rect width="64" x="320" y="212" height="24" />
@@ -50,7 +53,7 @@
             <line x2="384" y1="-96" y2="-96" x1="320" />
             <rect width="64" x="320" y="-44" height="24" />
             <line x2="384" y1="-32" y2="-32" x1="320" />
-            <rect width="256" x="64" y="-320" height="576" />
+            <rect width="256" x="64" y="-320" height="640" />
         </blockdef>
         <blockdef name="fifo">
             <timestamp>2010-10-14T12:38:41</timestamp>
@@ -72,6 +75,7 @@
             <blockpin signalname="BUSY" name="BUSY" />
             <blockpin signalname="XLXN_1" name="FIFO_EMPTY" />
             <blockpin signalname="XLXN_2" name="FIFO_FULL" />
+            <blockpin signalname="dout(31:0)" name="FIFO_IN(31:0)" />
             <blockpin signalname="ADIO(31:0)" name="ADIO(31:0)" />
             <blockpin signalname="renl_wenl" name="REN_WEN" />
             <blockpin signalname="rdl_wr" name="RD_WR" />
@@ -79,8 +83,8 @@
             <blockpin signalname="red1" name="RXLED" />
             <blockpin signalname="XLXN_3" name="FIFO_RD_EN" />
             <blockpin signalname="XLXN_4" name="FIFO_WR_EN" />
-            <blockpin signalname="dout(31:0)" name="FIFO_IN(31:0)" />
             <blockpin signalname="din(31:0)" name="FIFO_OUT(31:0)" />
+            <blockpin signalname="rstl" name="RST" />
         </block>
         <block symbolname="fifo" name="XLXI_2">
             <blockpin signalname="din(31:0)" name="din(31:0)" />
@@ -140,10 +144,10 @@
             <wire x2="1888" y1="1920" y2="1920" x1="1808" />
         </branch>
         <branch name="XLXN_2">
+            <wire x2="1328" y1="1552" y2="1552" x1="1296" />
             <wire x2="1296" y1="1552" y2="1792" x1="1296" />
             <wire x2="2512" y1="1792" y2="1792" x1="1296" />
             <wire x2="2512" y1="1792" y2="1984" x1="2512" />
-            <wire x2="1328" y1="1552" y2="1552" x1="1296" />
             <wire x2="2512" y1="1984" y2="1984" x1="2464" />
         </branch>
         <branch name="XLXN_1">
@@ -178,5 +182,10 @@
             <wire x2="1888" y1="2112" y2="2112" x1="1584" />
         </branch>
         <iomarker fontsize="28" x="480" y="1168" name="clkb" orien="R180" />
+        <branch name="rstl">
+            <wire x2="1312" y1="1744" y2="1744" x1="1120" />
+            <wire x2="1328" y1="1744" y2="1744" x1="1312" />
+        </branch>
+        <iomarker fontsize="28" x="1120" y="1744" name="rstl" orien="R180" />
     </sheet>
 </drawing>

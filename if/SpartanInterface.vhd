@@ -1,6 +1,3 @@
-
-
-
 ----------------------------------------------------------------------------------
 -- Author: 			 Alex Hornung
 -- 
@@ -50,8 +47,10 @@ entity SpartanInterface is
 		-- Interface to FIFO (write):
 		FIFO_OUT			: out std_logic_vector (31 downto 0);
 		FIFO_WR_EN		: out std_logic;
-		FIFO_FULL		: in std_logic
+		FIFO_FULL		: in std_logic;
 		
+		-- Misc interface:
+		EN_PERIPH		: out std_logic
 	);
 
 end SpartanInterface;
@@ -147,11 +146,12 @@ DATAIN_WR <= '1' when IF_STATE=RD_WAIT or (WR_REG_WRd1='1') else '0'; --
 
 -- When data is incoming, store the data itself (ADIO)
 -- and whether it's an address or not
-process (CLK)
+process (CLK, RST)
 begin 
 	if RST='1' then
 		is_addr <= '0';
 		data_reg <= (others => '0');
+		tmp_reg <= (others => '0');
 	elsif rising_edge(CLK) then
 		if DATAIN_WR='1' then
 			data_reg <= ADIO;
@@ -181,7 +181,7 @@ end process;
 
 
 -- Main state machine
-process (CLK)
+process (CLK, RST)
 begin
 	if RST='1' then
 		IF_STATE <= RST_STATE;
@@ -222,7 +222,7 @@ begin
 				end if;
 
 			when ADDR_DEC =>
-				blink_green <= ADDRESSi(31);
+				--blink_green <= ADDRESSi(31);
 				if ADDRESSi(31)='0' then
 					IF_STATE <= WR_REG;
 					--blink_green <= not blink_green;
@@ -242,7 +242,6 @@ begin
 						IF_STATE <= WAIT_DATACHK;
 					end if;
 				else
-					blink_red <= not blink_red;
 					--FIFO_WR_ENi <= '1';
 					DATA_RDY <= '0';
 					IF_STATE <= WAIT_DATACHK;
@@ -292,18 +291,20 @@ begin
 	if RST='1' then
 		data_out_reg <= (others => '0');
 	elsif rising_edge(CLK) then
-		--blink_green <= FIFO_EMPTY;
+		blink_green <= FIFO_EMPTY;
 		if FIFO_EMPTY='0' then
 			-- use first-word fall-through
 			data_out_reg <= FIFO_IN;--fifo_buffer;
 		else
-			data_out_reg <= data_reg_out;
+			data_out_reg <= tmp_reg;
 		end if;
 	end if;
 end process;
 
-ADIO <= tmp_reg when RD_WRi='1' else (others => 'Z');
---ADIO <= data_out_reg when RD_WRi='1' else (others => 'Z');
+--ADIO <= tmp_reg when RD_WRi='1' else (others => 'Z');
+ADIO <= data_out_reg when RD_WRi='1' else (others => 'Z');
+
+EN_PERIPH <= tmp_reg(0);
 
 -- Wire internal signals to external ones
 RD_WR <= RD_WRi;

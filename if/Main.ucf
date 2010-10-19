@@ -60,3 +60,52 @@ NET "busy" OFFSET = IN 8ns BEFORE clkb;
 NET "as_dsl" OFFSET = IN 9ns BEFORE clkb;
 #Created by Constraints Editor (xc4vsx35-ff668-10) - 2010/10/12
 NET "clkb" TNM_NET = clkb;
+
+
+
+
+# For ADC:
+NET CLK1_FB PERIOD = 9.5ns;
+#Control and setup
+NET	RESETl	LOC = 		H3;
+NET	CONFIG_DONE	LOC = 		AC1; #Output from Virtex-II FPGA, drive this low once FPGA configured
+
+#Clock Feedback signals from Clock Driver
+NET	CLK1_FB	LOC = 		B15;
+
+################
+## ADC Signals
+################
+NET "adc1_d<0>" LOC = C17;	#INTERNAL NOTE: On the Schematics these signals are called ADC2_**
+NET "adc1_d<1>" LOC = D19;	#they have been renamed as ADC1_** for consistancy with the other versions
+NET "adc1_d<2>" LOC = D20;
+NET "adc1_d<3>" LOC = C21;
+NET "adc1_d<4>" LOC = B18;
+NET "adc1_d<5>" LOC = D18;
+NET "adc1_d<6>" LOC = C19;
+NET "adc1_d<7>" LOC = C20;
+NET "adc1_d<8>" LOC = B20;
+NET "adc1_d<9>" LOC = B17;
+NET "adc1_d<10>" LOC = A17;
+NET "adc1_d<11>" LOC = A18;
+NET "adc1_d<12>" LOC = A19;
+NET "adc1_d<13>" LOC = A20;
+#NET "adc1_dry" LOC = D21;
+#NET "adc1_ovr" LOC = D17;
+
+
+NET "clk1_fb" TNM_NET = "clk1_fb";
+NET "adc1_d<0>" OFFSET = IN 7 ns BEFORE "clk1_fb";
+NET "adc1_d<1>" OFFSET = IN 7 ns BEFORE "clk1_fb";
+NET "adc1_d<2>" OFFSET = IN 7 ns BEFORE "clk1_fb";
+NET "adc1_d<3>" OFFSET = IN 7 ns BEFORE "clk1_fb";
+NET "adc1_d<4>" OFFSET = IN 7 ns BEFORE "clk1_fb";
+NET "adc1_d<5>" OFFSET = IN 7 ns BEFORE "clk1_fb";
+NET "adc1_d<6>" OFFSET = IN 7 ns BEFORE "clk1_fb";
+NET "adc1_d<7>" OFFSET = IN 7 ns BEFORE "clk1_fb";
+NET "adc1_d<8>" OFFSET = IN 7 ns BEFORE "clk1_fb";
+NET "adc1_d<9>" OFFSET = IN 7 ns BEFORE "clk1_fb";
+NET "adc1_d<10>" OFFSET = IN 7 ns BEFORE "clk1_fb";
+NET "adc1_d<11>" OFFSET = IN 7 ns BEFORE "clk1_fb";
+NET "adc1_d<12>" OFFSET = IN 7 ns BEFORE "clk1_fb";
+NET "adc1_d<13>" OFFSET = IN 7 ns BEFORE "clk1_fb";

@@ -22,7 +22,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
+use IEEE.NUMERIC_STD.ALL;
 
 entity SpartanInterface is
 	port (
@@ -61,15 +61,18 @@ type IFACE_STATES is (RST_STATE, IDLE, RD_WAIT, RD_DATA, RD_REG, WR_REG, WAIT_DA
 signal IF_STATE : IFACE_STATES;
 signal blink_red : std_logic;
 signal blink_green : std_logic;
-signal write_performed : std_logic := '0';
+--signal write_performed : std_logic := '0';
 signal data_reg : std_logic_vector(31 downto 0);
 signal is_addr : std_logic;
 -- Address in.
 signal ADDRESSi : std_logic_vector (31 downto 0);
-signal data_reg_out : std_logic_vector(31 downto 0) := "11011110101011011100000011111111";
+--signal data_reg_out : std_logic_vector(31 downto 0) := "11011110101011011100000011111111";
 signal data_out_reg : std_logic_vector(31 downto 0);
-signal fifo_buffer : std_logic_vector(31 downto 0);
+--signal fifo_buffer : std_logic_vector(31 downto 0);
 signal tmp_reg : std_logic_vector(31 downto 0);
+
+signal req_count : unsigned(15 downto 0);
+
 -- Delayed versions of busy and empty.
 signal EMPTYd1 : std_logic;
 signal BUSYd1 : std_logic;
@@ -81,7 +84,7 @@ signal WR_REG_WRd1 : std_logic;
 --signal FIFO_OUTi : std_logic_vector(31 downto 0);
 
 signal FIFO_RD_ENi : std_logic := '0';
-signal FIFO_WR_ENi : std_logic := '0';
+--signal FIFO_WR_ENi : std_logic := '0';
 
 -- Internal signals wired to Spartan Interface RD_WR and REN_WEN
 signal RD_WRi : std_logic;
@@ -95,7 +98,7 @@ signal DATA_RDY : std_logic;
 
 -- Write data into input register.
 signal DATAIN_WR : std_logic;
-signal DATAIN_FIFO : std_logic;
+--signal DATAIN_FIFO : std_logic;
 
 begin
 
@@ -165,18 +168,18 @@ end process;
 
 --
 -- FIFO in interface 
-DATAIN_FIFO <= '1' when IF_STATE=RD_REG else '0';	
-
-process (CLK, RST)
-begin
-	if RST='1' then
-		fifo_buffer <= (others => '0');
-	elsif rising_edge(CLK) then
-		if DATAIN_FIFO='1' then
-			fifo_buffer <= FIFO_IN;
-		end if;
-	end if;
-end process;
+--DATAIN_FIFO <= '1' when IF_STATE=RD_REG else '0';	
+--
+--process (CLK, RST)
+--begin
+--	if RST='1' then
+--		fifo_buffer <= (others => '0');
+--	elsif rising_edge(CLK) then
+--		if DATAIN_FIFO='1' then
+--			fifo_buffer <= FIFO_IN;
+--		end if;
+--	end if;
+--end process;
 
 
 
@@ -228,6 +231,8 @@ begin
 					--blink_green <= not blink_green;
 				else
 					IF_STATE <= RD_REG;
+					req_count <= unsigned(ADDRESSi(15 downto 0));
+					--blink_green <= '0';
 					--DATA_RDY <= '0';
 					FIFO_RD_ENi <= '1';
 				end if;
@@ -251,8 +256,15 @@ begin
 			when RD_REG =>
 				RD_WRi <= '1';
 				REN_WENi <= '0';
-				FIFO_RD_ENi <= '0';
-				IF_STATE <= WAIT_DATACHK;
+				if (req_count = 1 or BUSYd1 = '1') then
+					--blink_green <= '1';
+					FIFO_RD_ENi <= '0';
+					IF_STATE <= WAIT_DATACHK;
+				else
+					req_count <= req_count - 1;
+					IF_STATE <= RD_REG;
+					FIFO_RD_ENi <= '1';
+				end if;
 
 			-- Check to see if there's still data to be processed.
 			-- If there is, determine the nature of the data.	
@@ -296,12 +308,11 @@ begin
 			-- use first-word fall-through
 			data_out_reg <= FIFO_IN;--fifo_buffer;
 		else
-			data_out_reg <= tmp_reg;
+			data_out_reg <= (others => '1');
 		end if;
 	end if;
 end process;
 
---ADIO <= tmp_reg when RD_WRi='1' else (others => 'Z');
 ADIO <= data_out_reg when RD_WRi='1' else (others => 'Z');
 
 EN_PERIPH <= tmp_reg(0);
@@ -313,7 +324,7 @@ rxled <= blink_red;
 txled <= blink_green;
 
 FIFO_RD_EN <= FIFO_RD_ENi;
-FIFO_WR_EN <= FIFO_WR_ENi;
+--FIFO_WR_EN <= FIFO_WR_ENi;
 
 FIFO_OUT <= data_reg;
 

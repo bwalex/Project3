@@ -25,9 +25,6 @@
         <signal name="XLXN_5" />
         <signal name="XLXN_6(31:0)" />
         <signal name="XLXN_7" />
-        <signal name="XLXN_9" />
-        <signal name="XLXN_11" />
-        <signal name="XLXN_12" />
         <signal name="XLXN_13" />
         <signal name="red1" />
         <port polarity="Input" name="as_dsl" />
@@ -69,7 +66,7 @@
             <rect width="256" x="64" y="-320" height="704" />
         </blockdef>
         <blockdef name="fifo">
-            <timestamp>2010-10-19T10:48:40</timestamp>
+            <timestamp>2010-10-19T13:6:17</timestamp>
             <rect width="512" x="32" y="32" height="736" />
             <line x2="32" y1="80" y2="80" style="linewidth:W" x1="0" />
             <line x2="32" y1="144" y2="144" x1="0" />

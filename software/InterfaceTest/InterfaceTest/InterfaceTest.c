@@ -68,7 +68,7 @@ static DWORD if_readn(DIME_HANDLE hCard1, DWORD count, DWORD *pdata, DWORD timeo
 	assert((count % 16) == 0);
 
 	for (i = 0; i < count/16; i++) {
-		printf("Read %d/128, %#x\n", i, &pdata[16*i]);
+		printf("Read %d/%d, %#x\n", i+1, count/16, &pdata[16*i]);
 		error = _if_readn(hCard1, 16, &pdata[16*i], timeout);
 		if (error)
 			return error;
@@ -141,7 +141,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	DWORD error, tmp;
 	DWORD tmp_array[5192];
 	DWORD *ptr;
-	FILE *fp, *fp2;
+	short int i16;
+	FILE *fp, *fp2, *fpR, *fpI;
 	int i;
 	double mV, t;
 
@@ -151,10 +152,23 @@ int _tmain(int argc, _TCHAR* argv[])
 		exit(1);
 	}
 
-
 	fp2 = fopen("adc_time.csv", "w");
 	if (fp2 == NULL) {
 		printf("Failed to open adc_time.csv\n");
+		exit(1);
+	}
+
+
+	fpR = fopen("fft_real.csv", "w");
+	if (fpR == NULL) {
+		printf("Failed to open fft_real.csv\n");
+		exit(1);
+	}
+
+
+	fpI = fopen("fft_im.csv", "w");
+	if (fpI == NULL) {
+		printf("Failed to open fft_im.csv\n");
 		exit(1);
 	}
 
@@ -203,23 +217,53 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 #endif
 
-#if 1
+#if 0
 	error = if_readn(hCard1, 4096, &tmp_array[0], 10000);
 	for (i = 0; i < 4096; i++) {
 		tmp = tmp_array[i];
+#if 0
+		/*
+		 * Correction stage for direct-from-ADC input, only
+		 * needed with old cores.
+		 */
 		if (tmp & (1 << 13)) {
 			tmp |= 0xFFFFC000;
 			    /* 0b11111111111111111100000000000000 */
 		}
+#endif
+
 		//printf("Read: %#x (error = %d)\n", tmp, error);
 		//mV = (double)2200*(double)tmp/16384;
 		fprintf(fp, "%d,", tmp);
 	}
 #endif
 
+
+#if 1
+	/* FFT readout */
+	error = if_readn(hCard1, 4096, &tmp_array[0], 10000);
+	for (i = 0; i < 4096; i++) {
+		tmp = tmp_array[i];
+
+		//printf("Read: %#x (error = %d)\n", tmp, error);
+		//mV = (double)2200*(double)tmp/16384;
+
+		if (i == 2048) {
+			printf("Exponent: %d\n", tmp);
+		} else if (i < 2048) {
+			i16 = (tmp & 0xFFFF);
+			fprintf(fpR, "%hd,", i16);
+			i16 = (tmp >> 16);
+			fprintf(fpI, "%hd,", i16);
+		}
+	}
+#endif
+
 	close_card(hCard1, hLocate);
 	fclose(fp);
 	fclose(fp2);
+	fclose(fpR);
+	fclose(fpI);
 
 	printf("Done\n");
 	getchar();

@@ -4,12 +4,14 @@
 #include "stdafx.h"
 #include "assert.h"
 
-static DWORD if_write(DIME_HANDLE hCard1, DWORD *pdata, DWORD timeout)
+static DWORD if_write(DIME_HANDLE hCard1, unsigned char periph, DWORD *pdata, DWORD timeout)
 {
 	DWORD tmp_write;
 	DWORD ret;
 
-	tmp_write = 0x0FFFFFF0;
+	tmp_write = 0;
+	tmp_write |= periph;
+
 	assert(((unsigned long)&tmp_write) % 4 == 0);
 	assert(((unsigned long)pdata) % 4 == 0);
 
@@ -77,20 +79,20 @@ static DWORD if_readn(DIME_HANDLE hCard1, DWORD count, DWORD *pdata, DWORD timeo
 	return 0;
 }
 
-static void enable_periph(DIME_HANDLE hCard1)
+static void enable_periph(DIME_HANDLE hCard1, unsigned char periph)
 {
 	DWORD data;
 
 	data = 0xFFFFFFFF;
-	if_write(hCard1, &data, 10000);
+	if_write(hCard1, periph, &data, 10000);
 }
 
-static void disable_periph(DIME_HANDLE hCard1)
+static void disable_periph(DIME_HANDLE hCard1, unsigned char periph)
 {
 	DWORD data;
 
 	data = 0x00000000;
-	if_write(hCard1, &data, 10000);
+	if_write(hCard1, periph, &data, 10000);
 }
 
 static DWORD open_card(DIME_HANDLE *phCard, LOCATE_HANDLE *phLocate)
@@ -193,6 +195,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	disable_periph(hCard1);
 
 #if 0
+	/* XXX: crap version, triggers assert down the road */
 	t = 0;
 	for (i =0; i < 65536; i++) {
 		error = if_readn(hCard1, 1, &tmp, 10000);
@@ -221,7 +224,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	error = if_readn(hCard1, 4096, &tmp_array[0], 10000);
 	for (i = 0; i < 4096; i++) {
 		tmp = tmp_array[i];
-#if 0
+#if 1
 		/*
 		 * Correction stage for direct-from-ADC input, only
 		 * needed with old cores.

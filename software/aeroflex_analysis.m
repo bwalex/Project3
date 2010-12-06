@@ -367,7 +367,7 @@ SC(16,1:4)=[1 1 1 1];
 
 OFF = 7;
 iq = i(43700:56000)+1i*q(43700:56000);
-iq = awgn(iq, 12);
+%iq = awgn(iq, 20);
 
 figure();
 plot(real(iq), 'b');
@@ -378,8 +378,7 @@ plot(imag(iq), 'r');
 %figure();
 %plot(angle(iq));
 
-%
-
+% Decimate
 clear iqn;
 m = 1;
 for n=1:11000
@@ -395,15 +394,9 @@ iq = iqn;
 start = OFF*10;
 
 
-% XXX
-% iq= Chip32(:,1)+ 1i*Chip32(:,2);
-% OFF = 16;
-% start=289;
-
-
 
 yt = zeros(length(iq),1);
-d2=[-1/10 1/9 -1/8 1/7 -1/6 1/5 -1/4 1/3 -1/2 1 0 -1 1/2 -1/3 1/4 -1/5 1/6 -1/7 1/8 -1/9 1/10];
+
 % Demodulate
 for n=start:length(iq)
     % normalize
@@ -493,3 +486,182 @@ for m=Start_index:32:length(y)-32
     b=b+1;
 end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%% Receiver (all-in-one)
+clear y
+clear yt
+clear Bit_stream
+MC(1,1:32)= [3 1 1 0 0 0 0 0 0 1 1 1 0 1 1 1 1 0 1 0 1 1 1 0 0 1 1 0 1 1 0 0];
+MC(2,1:32)= [3 1 0 0 1 1 1 0 0 0 0 0 0 1 1 1 0 1 1 1 1 0 1 0 1 1 1 0 0 1 1 0];
+MC(3,1:32)= [3 1 1 0 1 1 0 0 1 1 1 0 0 0 0 0 0 1 1 1 0 1 1 1 1 0 1 0 1 1 1 0];
+MC(4,1:32)= [3 1 1 0 0 1 1 0 1 1 0 0 1 1 1 0 0 0 0 0 0 1 1 1 0 1 1 1 1 0 1 0];
+MC(5,1:32)= [3 0 1 0 1 1 1 0 0 1 1 0 1 1 0 0 1 1 1 0 0 0 0 0 0 1 1 1 0 1 1 1];
+MC(6,1:32)= [3 1 1 1 1 0 1 0 1 1 1 0 0 1 1 0 1 1 0 0 1 1 1 0 0 0 0 0 0 1 1 1];
+MC(7,1:32)= [3 1 1 1 0 1 1 1 1 0 1 0 1 1 1 0 0 1 1 0 1 1 0 0 1 1 1 0 0 0 0 0];
+MC(8,1:32)= [3 0 0 0 0 1 1 1 0 1 1 1 1 0 1 0 1 1 1 0 0 1 1 0 1 1 0 0 1 1 1 0];
+MC(9,1:32)= [3 0 0 1 1 1 1 1 1 0 0 0 1 0 0 0 0 1 0 1 0 0 0 1 1 0 0 1 0 0 1 1];
+MC(10,1:32)=[3 0 1 1 0 0 0 1 1 1 1 1 1 0 0 0 1 0 0 0 0 1 0 1 0 0 0 1 1 0 0 1];
+MC(11,1:32)=[3 0 0 1 0 0 1 1 0 0 0 1 1 1 1 1 1 0 0 0 1 0 0 0 0 1 0 1 0 0 0 1];
+MC(12,1:32)=[3 0 0 1 1 0 0 1 0 0 1 1 0 0 0 1 1 1 1 1 1 0 0 0 1 0 0 0 0 1 0 1];
+MC(13,1:32)=[3 1 0 1 0 0 0 1 1 0 0 1 0 0 1 1 0 0 0 1 1 1 1 1 1 0 0 0 1 0 0 0];
+MC(14,1:32)=[3 0 0 0 0 1 0 1 0 0 0 1 1 0 0 1 0 0 1 1 0 0 0 1 1 1 1 1 1 0 0 0];
+MC(15,1:32)=[3 0 0 0 1 0 0 0 0 1 0 1 0 0 0 1 1 0 0 1 0 0 1 1 0 0 0 1 1 1 1 1];
+MC(16,1:32)=[3 1 1 1 1 0 0 0 1 0 0 0 0 1 0 1 0 0 0 1 1 0 0 1 0 0 1 1 0 0 0 1];
+
+OC(1, 1:32)=[1 1 0 1 1 0 0 1 1 1 0 0 0 0 1 1 0 1 0 1 0 0 1 0 0 0 1 0 1 1 1 0];
+OC(2, 1:32)=[1 1 1 0 1 1 0 1 1 0 0 1 1 1 0 0 0 0 1 1 0 1 0 1 0 0 1 0 0 0 1 0];
+
+SC(1,1:4)=[0 0 0 0];
+SC(2,1:4)=[0 0 0 1];
+SC(3,1:4)=[0 0 1 0];
+SC(4,1:4)=[0 0 1 1];
+SC(5,1:4)=[0 1 0 0];
+SC(6,1:4)=[0 1 0 1];
+SC(7,1:4)=[0 1 1 0];
+SC(8,1:4)=[0 1 1 01];
+SC(9,1:4)=[1 0 0 0];
+SC(10,1:4)=[1 0 0 1];
+SC(11,1:4)=[1 0 1 0];
+SC(12,1:4)=[1 0 1 1];
+SC(13,1:4)=[1 1 0 0];
+SC(14,1:4)=[1 1 0 1];
+SC(15,1:4)=[1 1 1 0];
+SC(16,1:4)=[1 1 1 1];
+
+OFF = 7;
+iq = i(43700:56000)+1i*q(43700:56000);
+%iq = awgn(iq, 20);
+
+figure();
+plot(real(iq), 'b');
+hold on;
+plot(imag(iq), 'r');
+%plot(abs(iq), 'k');
+
+%figure();
+%plot(angle(iq));
+
+% Decimate
+clear iqn;
+m = 1;
+for n=1:11000
+    iqn(n) = iq(m);
+    if mod(m, 15) == 0
+        iqn(n) = mean(iq(m:m+1));
+        m = m+1;
+    end
+    
+    m = m+1;
+end
+iq = iqn;
+start = OFF*8;
+
+
+
+yt = zeros(length(iq),1);
+yo(1)=2;
+m = 1;
+
+Start_index = 0;
+
+% Demodulate
+for n=start:length(iq)
+    % normalize
+
+    prev = iq(round(n-OFF));
+    i_1 = real(prev);
+    q_1 = imag(prev);
+    i_2 = real(iq(n));
+    q_2 = imag(iq(n));
+    
+    x = (i_1 * i_2 + q_1 * q_2);
+    y = (i_2 * q_1 - i_1 * q_2);
+    % Trim to fixed-point precision (1QN with 3 bits of fractional
+    % precision)
+    x = double(fi(x, 1, 4, 3));
+    y = double(fi(y, 1, 4, 3));
+    y_abs = abs(y);
+
+    yt(n) = atan2(y, x);
+
+    if mod(n, OFF) == 0
+        if n > start+OFF
+            temp = sum(yt(n-OFF:n));
+            disp 'Foo1'
+            if (temp > OFF)
+                yo(m+1) = 0;
+            elseif (temp < -OFF)
+                yo(m+1) = 1;
+            else
+                yo(m+1) = ~yo(m);
+            end
+            
+            m = m + 1;
+            
+            % Find preamble
+            if (m > 32)
+                tmp = yo(m-32:m);
+                cor = dot(tmp(2:32), MC(1, 2:32));
+                if cor > 15
+                    if Start_index == 0
+                        Start_index = m-32;
+                    end
+                end
+            end
+            
+        end
+    end
+end
+
+y = yo;
+figure();
+plot(yt);
+%ylim([-3 3]);
+
+
+%%
+clear cor
+clear Bit_stream
+%decoding all the following bit stream.
+b=1;
+bit_index = 1;
+for m=Start_index:32:length(y)-32
+    for n = 1:16
+        cor(n) = dot(y(m+1:m+31),MC(n,2:32));
+    end
+    %cor
+    [maxd,index]=max(cor);
+    Bit_stream(bit_index:bit_index+3)= SC(index, 1:4);
+    %Bit_stream(b)= index-1;
+
+    bit_index = bit_index+4;
+    b=b+1;
+end

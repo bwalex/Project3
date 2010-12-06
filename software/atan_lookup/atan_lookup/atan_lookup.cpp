@@ -7,7 +7,7 @@
 /* We use 1QN format (one bit to the left of the radix point, signed 2's complement) */
 #define FIXED_WORD_BITS		5
 #define FIXED_FRACTION_BITS	4
-#define MASK_FOR_4_BITS		0xF
+#define MASK_FOR_FRACTION_BITS	0xF
 
 /* The output format of the atan table, 4+4 (signed 2's complement) */
 #define OUTPUT_FIXED_WORD_BITS		8
@@ -30,14 +30,14 @@ int _tmain(int argc, _TCHAR* argv[])
 	printf("memory_initialization_vector= ");
 	for (i = 0; i < max; i++)
 	{
-		bits_b = (i & MASK_FOR_4_BITS);
-		bits_a = ((i >> FIXED_WORD_BITS) & MASK_FOR_4_BITS);
+		bits_b = (i & MASK_FOR_FRACTION_BITS);
+		bits_a = ((i >> FIXED_WORD_BITS) & MASK_FOR_FRACTION_BITS);
 		sign_b = (i & (1 << FIXED_FRACTION_BITS));
 		sign_a = ((i >> FIXED_WORD_BITS) & (1 << FIXED_FRACTION_BITS));
 
 		if (sign_b) {
 			--bits_b;
-			bits_b = ((~bits_b) & MASK_FOR_4_BITS);
+			bits_b = ((~bits_b) & MASK_FOR_FRACTION_BITS);
 			/* Kludge, since 0b100... == -2^N-1 */
 			if (bits_b == 0)
 				b = -1.0;
@@ -49,7 +49,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		if (sign_a) {
 			--bits_a;
-			bits_a = ((~bits_a) & MASK_FOR_4_BITS);
+			bits_a = ((~bits_a) & MASK_FOR_FRACTION_BITS);
 			/* Kludge, since 0b100... == -2^N-1 */
 			if (bits_a == 0)
 				a = -1.0;

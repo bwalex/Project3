@@ -556,18 +556,24 @@ SC(14,1:4)=[1 1 0 1];
 SC(15,1:4)=[1 1 1 0];
 SC(16,1:4)=[1 1 1 1];
 
+% *After* decimation there are 7 samples per chip
 OFF = 7;
 iq = i(43700:56000)+1i*q(43700:56000);
-%iq = awgn(iq, 20);
+
+% Add white gaussian noise
+iq = awgn(iq, 10);
 
 figure();
 plot(real(iq), 'b');
 hold on;
 plot(imag(iq), 'r');
-%plot(abs(iq), 'k');
+plot(abs(iq), 'k');
 
 %figure();
 %plot(angle(iq));
+
+
+
 
 % Decimate
 clear iqn;
@@ -606,8 +612,8 @@ for n=start:length(iq)
     y = (i_2 * q_1 - i_1 * q_2);
     % Trim to fixed-point precision (1QN with 3 bits of fractional
     % precision)
-    x = double(fi(x, 1, 4, 3));
-    y = double(fi(y, 1, 4, 3));
+    %x = double(fi(x, 1, 4, 3));
+    %y = double(fi(y, 1, 4, 3));
     y_abs = abs(y);
 
     yt(n) = atan2(y, x);
@@ -615,7 +621,6 @@ for n=start:length(iq)
     if mod(n, OFF) == 0
         if n > start+OFF
             temp = sum(yt(n-OFF:n));
-            disp 'Foo1'
             if (temp > OFF)
                 yo(m+1) = 0;
             elseif (temp < -OFF)
@@ -626,10 +631,25 @@ for n=start:length(iq)
             
             m = m + 1;
             
-            % Find preamble
+            % Find preamble (or rather first 0 symbol)
             if (m > 32)
                 tmp = yo(m-32:m);
-                cor = dot(tmp(2:32), MC(1, 2:32));
+                % unroll the dot() into a Multiply-Accumulate based
+                % algorithm
+                cor = 0;
+                for idx=2:32
+                    p1 = tmp(idx);
+                    p2 = MC(1, idx);
+                    % Change 0 -> -1
+                    if p1 == 0
+                        p1 = -1;
+                    end
+                    if p2 == 0
+                        p2 = -1;
+                    end
+                    cor = cor + (p1 * p2);
+                end
+                %cor = dot(tmp(2:32), MC(1, 2:32));
                 if cor > 15
                     if Start_index == 0
                         Start_index = m-32;
@@ -655,7 +675,22 @@ b=1;
 bit_index = 1;
 for m=Start_index:32:length(y)-32
     for n = 1:16
-        cor(n) = dot(y(m+1:m+31),MC(n,2:32));
+        % unroll the dot() into a Multiply-Accumulate based
+        % algorithm
+        cor(n) = 0;
+        for idx=2:32
+            p1 = y(m+idx-1);
+            p2 = MC(n, idx);
+            % Change 0 -> -1
+            if p1 == 0
+                p1 = -1;
+            end
+            if p2 == 0
+                p2 = -1;
+            end
+            cor(n) = cor(n) + (p1 * p2);
+        end
+        %cor(n) = dot(y(m+1:m+31),MC(n,2:32));
     end
     %cor
     [maxd,index]=max(cor);
@@ -665,3 +700,13 @@ for m=Start_index:32:length(y)-32
     bit_index = bit_index+4;
     b=b+1;
 end
+
+
+% Write file for bit_process program
+fd = fopen('D:\Documents and Settings\Administrator\Desktop\Project3\software\bit_process\input.txt', 'w+')
+
+for m=1:length(Bit_stream)
+    fprintf(fd, '%d ', Bit_stream(m));
+end
+
+fclose(fd);

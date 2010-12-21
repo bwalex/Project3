@@ -61,14 +61,22 @@ entity ADC is
 		FFT_RFD		: in   std_logic;
 		FFT_EXP		: in   std_logic_vector (4 downto 0);
 		XN_IDX		: in   std_logic_vector (10 downto 0);
-		XK_IDX		: in   std_logic_vector (10 downto 0)
+		XK_IDX		: in   std_logic_vector (10 downto 0);
 
+		-- Interface to CORDIC (for magnitude)
+		XFORM_RE		: out	 std_logic_vector (15 downto 0);
+		XFORM_IM		: out	 std_logic_vector (15 downto 0);
+		CORDIC_CE	: out	 std_logic;
+		CORDIC_RDY	: in	 std_logic;
+		XFORM_ABS	: in	 std_logic_vector (15 downto 0)
 	);
 end ADC;
 
-
 architecture Behavioral of ADC is
 signal enabled : std_logic := '0';
+signal cordic_en : std_logic := '0';
+signal cordic_ready : std_logic := '0';
+signal unloading : std_logic := '0';
 signal DATAi   : std_logic_vector (31 downto 0);
 signal DATAii  : std_logic_vector (31 downto 0);
 signal WR_ENi  : std_logic;
@@ -86,6 +94,11 @@ signal exp		: std_logic_vector (4 downto 0);
 type FFT_STATES is (RST_STATE, IDLE, START, FILL, WAIT_XFORM, WAIT_UNLOAD, UNLOAD, WAIT_DONE, DONE_DONE);
 signal FFT_STATE : FFT_STATES;
 signal FFT_STATEd1 : FFT_STATES;
+
+
+signal cycles_left : unsigned(7 downto 0); -- max 63
+type CORDIC_STATES is (RST_STATE, IDLE, ACTIVE, WAIT_DONE, DONE_DONE);
+signal CORDIC_STATE : CORDIC_STATES;
 
 begin
 -- module configured
@@ -114,6 +127,7 @@ begin
 		ready <= FFT_RFD;
 		valid <= FFT_DV;
 		done <= FFT_DONE;
+		cordic_ready <= CORDIC_RDY;
 	end if;
 end process;
 
@@ -171,6 +185,7 @@ begin
 			when RST_STATE =>
 				starti <= '0';
 				unloadi <= '0';
+				unloading <= '0';
 				FFT_STATE <= IDLE;
 				--ledi <= '1';
 
@@ -210,37 +225,94 @@ begin
 					FFT_STATE <= WAIT_UNLOAD;
 				else
 					exp <= FFT_EXP;
-					WR_ENi <= '1';
-					DATAii(15 downto 0) <= XK_RE;
-					DATAii(31 downto 16) <= XK_IM;
+					unloading <= '1';
+					--WR_ENi <= '1';
+					--DATAii(15 downto 0) <= XK_RE;
+					--DATAii(31 downto 16) <= XK_IM;
 					FFT_STATE <= UNLOAD;
 				end if;
 
 			when UNLOAD =>
 				if (valid = '1') then
-					WR_ENi <= '1';
-					DATAii(15 downto 0) <= XK_RE;
-					DATAii(31 downto 16) <= XK_IM;
+					--WR_ENi <= '1';
+					--DATAii(15 downto 0) <= XK_RE;
+					--DATAii(31 downto 16) <= XK_IM;
+					--cordic_en <= '1';
 					FFT_STATE <= UNLOAD;
 					--ledi <= '0';
 				else
-					WR_ENi <= '0';
+					--WR_ENi <= '0';
+					unloading <= '0';
+					--cordic_en <= '0';
 					FFT_STATE <= WAIT_DONE;
 				end if;
 
 			when WAIT_DONE =>
-				WR_ENi <= '1';
-				DATAii(4 downto 0) <= exp;
-				DATAii(31 downto 5) <= (others => '0');
+				--WR_ENi <= '1';
+				--DATAii(4 downto 0) <= exp;
+				--DATAii(31 downto 5) <= (others => '0');
 				FFT_STATE <= DONE_DONE;
 
 			when DONE_DONE =>
-				WR_ENi <= '0';
+				--WR_ENi <= '0';
 				FFT_STATE <= DONE_DONE;
 
 			when others =>
 				FFT_STATE <= RST_STATE;
 		end case;
+	end if;
+end process;
+
+
+process (CLK_FB, RST)
+begin
+	if RST='0' then
+		CORDIC_STATE <= RST_STATE;
+	elsif rising_edge(CLK_FB) then
+		case CORDIC_STATE is
+			when RST_STATE =>
+				CORDIC_STATE <= IDLE;
+
+			when IDLE =>
+				if unloading = '1' then
+					cordic_en <= '1';
+					CORDIC_STATE <= ACTIVE;
+				end if;
+
+			when ACTIVE =>
+				if cordic_ready = '1' then
+					if unloading = '0' and cycles_left = 0 then
+						cycles_left <= X"19"; -- Cordic latency is 25 cycles
+					elsif unloading = '1' or cycles_left > 0 then
+						cycles_left <= cycles_left - 1;
+						WR_ENi <= '1';
+						DATAii(15 downto 0) <= XFORM_ABS;
+						if XFORM_ABS(15) = '1' then
+							DATAii(31 downto 16) <= (others => '1');
+						else
+							DATAii(31 downto 16) <= (others => '0');
+						end if;
+						if cycles_left = 1 then
+							cordic_en <= '0';
+							WR_ENi <= '1';
+							DATAii(4 downto 0) <= exp;
+							DATAii(31 downto 5) <= (others => '0');
+							CORDIC_STATE <= WAIT_DONE;
+						end if;
+					end if;
+				end if;
+			
+			when WAIT_DONE =>
+				WR_ENi <= '0';
+				CORDIC_STATE <= DONE_DONE;
+
+			when DONE_DONE =>
+				CORDIC_STATE <= DONE_DONE;
+			
+			when others =>
+				CORDIC_STATE <= RST_STATE;
+		end case;
+
 	end if;
 end process;
 
@@ -255,6 +327,10 @@ FFT_FWDINV_WR <= '1';
 XN_RE	<= DATAi(15 downto 0);
 XN_IM <= (others => '0');
 
+XFORM_RE <= XK_RE;
+XFORM_IM <= XK_IM;
+
+CORDIC_CE <= cordic_en;
 
 end Behavioral;
 

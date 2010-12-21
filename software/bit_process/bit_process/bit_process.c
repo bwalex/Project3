@@ -88,7 +88,9 @@ void packet_introspect(struct ieee802_15_4_PKTdemo *pkt)
 	 */
 	crc_start = &pkt->mac_hdr;
 	crc_len = offsetof(struct ieee802_15_4_PKTdemo, fcs) - offsetof(struct ieee802_15_4_PKTdemo, mac_hdr);
+#if 0
 	printf("crc_len=%d\n", crc_len);
+#endif
 	crc = _crc(crc_start, crc_len, 0);
 
 	printf("FCS:\t\t %.4x (%s)\n", pkt->fcs, (crc == pkt->fcs) ? "correct" : "incorrect");
@@ -165,6 +167,11 @@ int _tmain(int argc, _TCHAR* argv[])
 	state = STATE_NEWSYM;
 
 	printf("nsyms = %d\n", nsyms);
+	if (!nsyms) {
+		printf("No symbols read, exiting\n");
+		return 1;
+	}
+
 	for (i = 0; i < nsyms; i++) {
 		/*
 		 * According to the 802.15.4-2003 standard:

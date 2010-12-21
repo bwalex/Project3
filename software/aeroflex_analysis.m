@@ -561,7 +561,7 @@ OFF = 7;
 iq = i(43700:56000)+1i*q(43700:56000);
 
 % Add white gaussian noise
-iq = awgn(iq, 10);
+iq = awgn(iq, 8);
 
 figure();
 plot(real(iq), 'b');
@@ -612,8 +612,8 @@ for n=start:length(iq)
     y = (i_2 * q_1 - i_1 * q_2);
     % Trim to fixed-point precision (1QN with 3 bits of fractional
     % precision)
-    %x = double(fi(x, 1, 4, 3));
-    %y = double(fi(y, 1, 4, 3));
+    x = double(fi(x, 1, 4, 3));
+    y = double(fi(y, 1, 4, 3));
     y_abs = abs(y);
 
     yt(n) = atan2(y, x);

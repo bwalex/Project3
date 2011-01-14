@@ -46,11 +46,20 @@ end ieee802154_angle;
 
 architecture Behavioral of ieee802154_angle is
 type ANGLE_STATES is (RST_STATE, SAMPLE, PROD_1, PROD_2, OUTP );
+
+-- Thoughts:
+--  - trimming precision to 8 MSB from 14 is no good, since
+--    all lower q. levels will be 0.
+--  - need to keep all 14 bits of precision until past the
+--    multiplication process... or at least 12 or so?
+--  - what is the change in multiplier DSP slice consumption?
+--    will that require more DSP slices, for 14 bit mult?
+--    -> seems possible to do 18x18 with one slice.
 signal STATE : ANGLE_STATES;
 signal I_d1 : SIGNED (7 downto 0);
 signal Q_d1 : SIGNED (7 downto 0);
-signal Y : SIGNED (7 downto 0); -- XXX: might need to be 15 downto 0
-signal X : SIGNED (7 downto 0); -- XXX: might need to be 15 downto 0
+signal Y : SIGNED (8 downto 0); -- XXX: or 7 might need to be 15 downto 0
+signal X : SIGNED (8 downto 0); -- XXX: or 7 might need to be 15 downto 0
 signal PHIi : std_logic_vector (7 downto 0);
 signal LUT_Ai : std_logic_vector (9 downto 0);
 signal LUT_ENi : std_logic;
@@ -91,8 +100,8 @@ begin
 				Y <= Y - I_d1 * Qi;
 				X <= X + Qi * Q_d1;
 				LUT_ENi <= '1';
-				LUT_Ai(9 downto 5) <= Y(7 downto 3);
-				LUT_Ai(4 downto 0) <= X(7 downto 3);
+				LUT_Ai(9 downto 5) <= Y(8 downto 4);
+				LUT_Ai(4 downto 0) <= X(8 downto 4);
 				STATE <= OUTP;
 				 
 			when OUTP =>

@@ -34,8 +34,8 @@ entity ieee802154_decimate_normalize is
     Port (
 		I_in : in  SIGNED(13 downto 0);
 		Q_in : in  SIGNED (13 downto 0);
-		I_out : out  SIGNED(7 downto 0);
-		Q_out : out  SIGNED (7 downto 0);
+		I_out : out  SIGNED(7 downto 0); -- at 14 MS/s
+		Q_out : out  SIGNED (7 downto 0); -- at 14 MS/s
 		DRDY : out std_logic;
 		CLK_FB	: in  STD_LOGIC; -- 210 MHz clock
 		RST : in  STD_LOGIC

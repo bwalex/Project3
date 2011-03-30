@@ -2,6 +2,13 @@
 //
 
 #include "stdafx.h"
+#include "targetver.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <tchar.h>
+#include <string.h>
+#include <stddef.h>
 
 #define _isnum(x)	((x >= '0') && (x <= '9'))
 
@@ -16,7 +23,6 @@ struct ieee802_15_4_MAChdr {
 };
 
 struct ieee802_15_4_PHYhdr {
-	unsigned char preamble[4];
 	unsigned char sfd;
 	unsigned char frame_length;
 };
@@ -56,15 +62,12 @@ void packet_introspect(struct ieee802_15_4_PKTdemo *pkt)
 {
 	int ok, crc;
 	unsigned short flen;
-	unsigned int correct_preamble = 0;
 	unsigned char *crc_start;
 	unsigned int crc_len;
 	unsigned short swap;
 
-	ok = !memcmp(&correct_preamble, pkt->phy_hdr.preamble, sizeof(correct_preamble));
 	flen = pkt->phy_hdr.frame_length;
 
-	printf("Preamble:\t %s\n", (ok) ? "correct" : "incorrect");
 	printf("SFD:\t\t %.2x\n", pkt->phy_hdr.sfd);
 	printf("Frame Length:\t %.2x (%#d)\n", pkt->phy_hdr.frame_length,
 		pkt->phy_hdr.frame_length);
@@ -109,8 +112,10 @@ int _tmain(int argc, _TCHAR* argv[])
 	long sz;
 	size_t bytes_read;
 	FILE *fp;
-	char *buf, *ptr;
+	char *buf, *ptr, mode;
 	unsigned char pkt[8192];
+	char file_name[1024];
+	unsigned char *pkt_ptr;
 	unsigned char symbols[2048];
 	unsigned char octet;
 	unsigned short word16;
@@ -118,11 +123,18 @@ int _tmain(int argc, _TCHAR* argv[])
 	struct ieee802_15_4_PKTdemo pkt_demo;
 	int i, bitcount, bytecount, symbolcount, state, nsyms;
 
-	fp = fopen("D:\\Documents and Settings\\Administrator\\Desktop\\Project3\\software\\bit_process\\input.txt", "r");
+	memset(file_name, 0, sizeof(file_name));
+	printf("Input filename: ");
+	fflush(stdout);
+	scanf("%[^\n]", file_name);
+	getchar();
+	fp = fopen(file_name, "r");
 	if (fp == NULL) {
-		perror("fopen");
+		perror(file_name);
 		return 1;
 	}
+
+	printf("\n\n");
 
 	/* Get filesize */
 	fseek(fp, 0L, SEEK_END);
@@ -150,77 +162,118 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	nsyms = 0;
 
-	while (*ptr != '\0') {
-		/*
-		 * Process the CSV into the symbols[] array. We
-		 * blindly assume that each number is only a single
-		 * digit. As a matter of fact we understand any
-		 * format that follows this syntax:
-		 * <digit><non-digit><digit><non-digit>...
-		 */
-		if (_isnum(*ptr)) {
-			symbols[nsyms++] = *ptr - '0';
+	printf("\n\nWhich mode to use for parsing the file?\n");
+	printf("1) Bit stream\n");
+	printf("2) Byte stream\n");
+	printf("Enter selection: ");
+	fflush(stdout);
+	mode = getchar();
+
+	if (mode == '1') {
+		while (*ptr != '\0') {
+			/*
+			 * Process the CSV into the symbols[] array. We
+			 * blindly assume that each number is only a single
+			 * digit. As a matter of fact we understand any
+			 * format that follows this syntax:
+			 * <digit><non-digit><digit><non-digit>...
+			 */
+			if (_isnum(*ptr)) {
+				symbols[nsyms++] = *ptr - '0';
+			}
+			*ptr++;
 		}
-		*ptr++;
-	}
 
-	state = STATE_NEWSYM;
+		state = STATE_NEWSYM;
 
-	printf("nsyms = %d\n", nsyms);
-	if (!nsyms) {
-		printf("No symbols read, exiting\n");
-		return 1;
-	}
+		printf("nsyms = %d\n", nsyms);
+		if (!nsyms) {
+			printf("No symbols read, exiting\n");
+			return 1;
+		}
 
-	for (i = 0; i < nsyms; i++) {
-		/*
-		 * According to the 802.15.4-2003 standard:
-		 * The 4 LSBs (b0, b1, b2, b3) of each octet shall
-		 * map into one data symbol, and the 4 MSBs
-		 * b4, b5, b6, b7) of each octet shall map into the
-		 * next data symbol.
-		 */
-		switch (state) {
-		case STATE_NEWSYM:
-			symbolcount = 0;
-			octet = 0;
-			octet |= (symbols[i] << 3);
-			state = STATE_LSB;
-			++symbolcount;
-			break;
-
-		case STATE_LSB:
-			octet |= (symbols[i] << (3-symbolcount));
-			if (++symbolcount == 4) {
-				state = STATE_MSB;
+		for (i = 0; i < nsyms; i++) {
+			/*
+			 * According to the 802.15.4-2003 standard:
+			 * The 4 LSBs (b0, b1, b2, b3) of each octet shall
+			 * map into one data symbol, and the 4 MSBs
+			 * b4, b5, b6, b7) of each octet shall map into the
+			 * next data symbol.
+			 */
+			switch (state) {
+			case STATE_NEWSYM:
 				symbolcount = 0;
-			}
-			break;
+				octet = 0;
+				octet |= (symbols[i] << 3);
+				state = STATE_LSB;
+				++symbolcount;
+				break;
 
-		case STATE_MSB:
-			octet |= (symbols[i] << (7-symbolcount));
-			if (++symbolcount == 4) {
-				state = STATE_NEWSYM;
-				pkt[bytecount++] = octet;
+			case STATE_LSB:
+				octet |= (symbols[i] << (3-symbolcount));
+				if (++symbolcount == 4) {
+					state = STATE_MSB;
+					symbolcount = 0;
+				}
+				break;
+
+			case STATE_MSB:
+				octet |= (symbols[i] << (7-symbolcount));
+				if (++symbolcount == 4) {
+					state = STATE_NEWSYM;
+					pkt[bytecount++] = octet;
+				}
+				break;
+			default:
+				printf("Uh-Oh!\n");
+				break;
 			}
-			break;
-		default:
-			printf("Uh-Oh!\n");
-			break;
+		}
+	} else {
+		ptr = buf;
+		pkt_ptr = pkt;
+		/* Hack: byte streams don't contain SFD, so we add it manually */
+		*pkt_ptr++ = 0xA7;
+
+		while (*ptr != '\0') {
+			/*
+			 * Process the CSV into the pkt[] array. 
+			 * We understand any
+			 * format that follows this syntax:
+			 * <digit><non-digit><digit><non-digit>...
+			 */
+			if (!_isnum(*ptr) && *ptr != '-') {
+				*ptr++;
+				continue;
+			}
+			*pkt_ptr++ = (unsigned char)strtol(ptr, &ptr, 10);
+			++bytecount;
 		}
 	}
+
+	pkt_ptr = pkt;
+
+	for (i = 0; i < bytecount; i++) {
+		if (pkt[i] != 0)
+			break;
+		++pkt_ptr;
+		--bytecount;
+	}
+
 
 	printf("============================================================\n");
 
+
 	for (i = 0; i < bytecount; i++) {
-		printf("%.2x ", pkt[i]);
+		printf("%.2x ", pkt_ptr[i]);
 	}
 
 	/* Flush */
 	printf("\n\n");
 
+
 	memset(&pkt_demo, 0, sizeof(pkt_demo));
-	memcpy(&pkt_demo, pkt, bytecount);
+	memcpy(&pkt_demo, pkt_ptr, bytecount);
 	packet_introspect(&pkt_demo);
 
 
@@ -229,4 +282,3 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	return 0;
 }
-

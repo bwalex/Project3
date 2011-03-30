@@ -148,7 +148,7 @@ begin
 			--WR_ENi <= '0';
 		elsif enabled = '1' then
 			DATAi(13 downto 0) <= ADC1_D;
-			if (DATAi(13) = '1') then
+			if (ADC1_D(13) = '1') then
 				DATAi(31 downto 14) <= (others => '1');
 			else 
 				DATAi(31 downto 14) <= (others => '0');

@@ -1,51 +1,42 @@
-----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date:    13:18:42 01/04/2011 
--- Design Name: 
--- Module Name:    ieee802154_decimate_normalize - Behavioral 
--- Project Name: 
--- Target Devices: 
--- Tool versions: 
--- Description: 
---
--- Dependencies: 
---
--- Revision: 
--- Revision 0.01 - File Created
--- Additional Comments: 
---
-----------------------------------------------------------------------------------
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.all;
 
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
-
--- Uncomment the following library declaration if instantiating
--- any Xilinx primitives in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
 
 entity ieee802154_decimate_normalize is
+    generic(
+			IN_WIDTH: 	positive:=14;
+			OUT_WIDTH:	positive:=8
+	);
     Port (
-		I_in : in  SIGNED(13 downto 0);
-		Q_in : in  SIGNED (13 downto 0);
-		I_out : out  SIGNED(7 downto 0); -- at 14 MS/s
-		Q_out : out  SIGNED (7 downto 0); -- at 14 MS/s
+		I_in : in  STD_LOGIC_VECTOR(IN_WIDTH-1 downto 0);
+		Q_in : in  STD_LOGIC_VECTOR (IN_WIDTH-1 downto 0);
+		I_out : out  STD_LOGIC_VECTOR (OUT_WIDTH-1 downto 0); -- at 14 MS/s
+		Q_out : out  STD_LOGIC_VECTOR (OUT_WIDTH-1 downto 0); -- at 14 MS/s
 		DRDY : out std_logic;
-		CLK_FB	: in  STD_LOGIC; -- 210 MHz clock
+		CLK_14 : in STD_LOGIC;
 		RST : in  STD_LOGIC
 	);
 end ieee802154_decimate_normalize;
 
 architecture Behavioral of ieee802154_decimate_normalize is
-
+signal I_OUT_i : STD_LOGIC_VECTOR(OUT_WIDTH-1 downto 0);
+signal Q_OUT_i : STD_LOGIC_VECTOR(OUT_WIDTH-1 downto 0);
 begin
 
+process (CLK_14, RST)
+begin
+	if RST='0' then
+		I_OUT_i <= (others => '0');
+		Q_OUT_i <= (others => '0');
+	elsif rising_edge(CLK_14) then
+		I_OUT_i <= I_in(IN_WIDTH-1 downto IN_WIDTH-OUT_WIDTH);
+		Q_OUT_i <= Q_in(IN_WIDTH-1 downto IN_WIDTH-OUT_WIDTH);
+	end if;
+end process;
+
+I_out <= I_OUT_i;
+Q_out <= Q_OUT_i;
 
 end Behavioral;
 
